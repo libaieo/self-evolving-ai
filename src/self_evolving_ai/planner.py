@@ -5,6 +5,7 @@ behavior can be tested and explained before adding model integration later.
 """
 
 from __future__ import annotations
+import re
 
 from self_evolving_ai.request_models import RequestAnalysis, TaskPlan
 
@@ -45,7 +46,7 @@ def analyze_request(request: str) -> RequestAnalysis:
     ambiguities: list[str] = []
     if len(original) < 12:
         ambiguities.append("요청이 짧아 목표나 완료 조건이 충분히 구체적이지 않을 수 있음")
-    if any(term in lowered for term in ("그거", "그렇게", "저것", "이거", "it", "that")):
+    if any(term in lowered for term in ("그거", "그렇게", "저것", "이거")) or re.search(r"\\b(?:it|that)\\b", lowered):
         ambiguities.append("지시 대상이 현재 문장만으로 명확하지 않을 수 있음")
 
     criteria = ["결과가 요청의 핵심 목표를 직접 충족함"]
