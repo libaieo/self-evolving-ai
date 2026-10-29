@@ -46,6 +46,7 @@ def main() -> int:
     print("상태: 정상적으로 시작되었습니다.")
     print("안내: --analyze로 요청 분석, --list-modules로 전문 모듈 목록, --run으로 모듈 실행을 시험할 수 있습니다.")
     print("참고: 현재 분석과 예시 모듈은 규칙 기반이며, AI 모델을 사용하지 않습니다.")
+    print("AI 추론 기능은 아직 포함하지 않습니다.")
     return 0
 
 
