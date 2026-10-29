@@ -1,5 +1,6 @@
 name: Sync GitHub changes to Notion
 
+# Validation trigger: run the sync workflow after repository secrets are configured.
 on:
   push:
     branches: [main, master]
