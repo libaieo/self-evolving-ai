@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "self-evolving-ai"
+version = "0.1.0"
+description = "A modular foundation for the Self-Evolving AI project."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+self-evolving-ai = "self_evolving_ai.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
