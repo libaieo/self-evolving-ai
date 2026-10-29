@@ -34,8 +34,12 @@ class RequestAnalysisTests(unittest.TestCase):
     def test_short_request_is_flagged_as_ambiguous(self):
         result = analyze_request("도와줘")
         plan = create_plan(result)
-        self.assertTrue(plan.ambiguities)
+        self.assertTrue(result.ambiguities)
         self.assertTrue(plan.needs_clarification)
+
+    def test_english_word_containing_it_is_not_automatically_ambiguous(self):
+        result = analyze_request("Write a concise explanation of the system architecture.")
+        self.assertFalse(any("지시 대상" in item for item in result.ambiguities))
 
 
 if __name__ == "__main__":
