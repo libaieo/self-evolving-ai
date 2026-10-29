@@ -18,10 +18,19 @@ AI가 요청을 해석하고, 결과를 검증하며, 개선점을 기록해 다
 - **1단계: 완료** — 기본 문서와 저장소 구조를 구성했습니다.
 - **2단계: 구현 중** — 실행 기반과 자동 테스트 파일을 추가했습니다. 실제 테스트 결과 확인이 남았습니다.
 - **3단계: 구현 중** — 규칙 기반 요청 분석, 위험·모호성 표시, 작업 계획 생성 기능을 추가했습니다. 자동 테스트 결과 확인이 남았습니다.
+- **4단계: 구현 중** — 공통 인터페이스를 사용하는 요약·체크리스트 모듈, 등록부, 디스패처를 추가했습니다. 자동 테스트 결과 확인이 남았습니다.
 
 단계별 완료 조건은 개발 로드맵을 기준으로 판단합니다.
 
 ## 실행 기반
 설치 및 실행 방법은 [설치 안내](docs/setup.md)를 참고하세요.
 
-요청 분석 기능은 [3단계 구현 설명](docs/stage-3-request-planning.md)을 참고하세요.
+요청 분석 기능은 [3단계 구현 설명](docs/stage-3-request-planning.md)을, 전문 모듈 체계는 [4단계 구현 설명](docs/stage-4-specialist-modules.md)을 참고하세요.
+
+전문 모듈 확인 및 실행 예시:
+
+```bash
+python -m self_evolving_ai.main --list-modules
+python -m self_evolving_ai.main --run summary --request "요약할 텍스트를 입력합니다"
+python -m self_evolving_ai.main --run 계획 --request "책상 정리"
+```
