@@ -1,0 +1,80 @@
+name: Sync GitHub changes to Notion
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Collect commit and test status
+        id: report
+        shell: bash
+        run: |
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "message=$(git log -1 --pretty=%s | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+          {
+            echo "files<<EOF"
+            git diff-tree --no-commit-id --name-only -r HEAD | head -30
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          if [ -f pyproject.toml ] || [ -f setup.cfg ] || [ -f pytest.ini ] || [ -d tests ]; then
+            python -m pip install --upgrade pip
+            python -m pip install pytest
+            if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
+            if python -m pytest -q; then echo "tests=PASS" >> "$GITHUB_OUTPUT"; else echo "tests=FAIL" >> "$GITHUB_OUTPUT"; fi
+          else
+            echo "tests=NOT_CONFIGURED" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Append report to Notion
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
+          COMMIT_SHA: ${{ steps.report.outputs.commit }}
+          COMMIT_MESSAGE: ${{ steps.report.outputs.message }}
+          CHANGED_FILES: ${{ steps.report.outputs.files }}
+          TEST_STATUS: ${{ steps.report.outputs.tests }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.report.outputs.commit }}
+        shell: bash
+        run: |
+          if [ -z "$NOTION_TOKEN" ] || [ -z "$NOTION_PAGE_ID" ]; then
+            echo "Missing NOTION_TOKEN or NOTION_PAGE_ID repository secrets."
+            exit 1
+          fi
+          python - <<'PY'
+          import json, os, urllib.request, urllib.error
+          changed = os.environ.get("CHANGED_FILES", "").splitlines()
+          rich = lambda s: [{"type":"text","text":{"content":str(s)[:1900]}}]
+          blocks = [
+            {"object":"block","type":"heading_3","heading_3":{"rich_text":rich("GitHub 동기화 기록")}},
+            {"object":"block","type":"paragraph","paragraph":{"rich_text":rich("저장소: " + os.environ["REPOSITORY"])}},
+            {"object":"block","type":"paragraph","paragraph":{"rich_text":[{"type":"text","text":{"content":"커밋: " + os.environ["COMMIT_SHA"],"link":{"url":os.environ["COMMIT_URL"]}}]}},
+            {"object":"block","type":"paragraph","paragraph":{"rich_text":rich("변경 내용: " + os.environ.get("COMMIT_MESSAGE",""))}},
+            {"object":"block","type":"paragraph","paragraph":{"rich_text":rich("테스트 결과: " + os.environ.get("TEST_STATUS","UNKNOWN"))}},
+          ]
+          if changed:
+            blocks.append({"object":"block","type":"bulleted_list_item","bulleted_list_item":{"rich_text":rich("변경 파일: " + ", ".join(changed[:20]))}})
+          req = urllib.request.Request(
+            "https://api.notion.com/v1/blocks/" + os.environ["NOTION_PAGE_ID"] + "/children",
+            data=json.dumps({"children":blocks}).encode(),
+            headers={"Authorization":"Bearer " + os.environ["NOTION_TOKEN"],"Notion-Version":"2022-06-28","Content-Type":"application/json"},
+            method="PATCH")
+          try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+              print("Notion sync HTTP", response.status)
+          except urllib.error.HTTPError as e:
+            print("Notion API error:", e.code, e.read().decode()[:2000])
+            raise
+          PY
